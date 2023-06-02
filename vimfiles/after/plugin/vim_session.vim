@@ -35,7 +35,8 @@ endfunction
 " セッション一覧を表示する
 function! s:SessionList() abort
 
-    let s:sessions = readdir(g:vsession_path)
+    " 拡張子がvimのもののみ、セッション名として表示する
+    let s:sessions = readdir(g:vsession_path, {n -> n !~ '\v_del_\d{4}-\d{2}-\d{2}_.+'})
     " session bufferlistに表示するためのデータを作成
     let s:sessionList = []
     let l:cnt = 0
@@ -65,7 +66,7 @@ function! s:SessionList() abort
     call setline(2, '   SESSIONLIST PATH = ' . g:vsession_path)
     call setline(3, '   Use gs -> list session; gl -> load session; gL -> reloadSession; gR -> delete session' )
     call setline(4, '   :SS test.vim -> save session in test.vim :SS -> current session or default.vim' )
-    call setline(5, '   ** vsession_current_name = ' . g:vsession_current_name)
+    call setline(5, '   ** session_current_name = ' . g:vsession_current_name)
     call setline(6, '--------------------------------------------------------------------------------')
     call setline(7, '' )
 
@@ -187,7 +188,7 @@ function! s:SessionDelete(sessionName) abort
     " echo "filetype is " . &filetype
     if &filetype == "SessionList"
         let l:sessionName = getline(a:sessionName)
-        let l:sessionName = matchstr(l:l:sessionName, '^\[\d\d\]\.\s\zs.\+$')
+        let l:sessionName = matchstr(l:sessionName, '^\[\d\d\]\.\s\zs.\+$')
         " echo "l:sessionName is " . l:sessionName
         " echo matchstr(l:sessionName, '^\[\d\d\]\.\s\zs.\+$')
 
@@ -203,12 +204,16 @@ function! s:SessionDelete(sessionName) abort
             if l:answer ==# 'Y'
                 " echo "Selected Session name is : " . s:sessionFullpath
                 " セッションを削除する
-                " execute "!rm -rf " . s:sessionFullpath
-                call delete(s:sessionFullpath)
+                " call delete(s:sessionFullpath)
+                let now = strftime("%Y-%m-%d_%H%M%S",localtime())
+                let l:sessionNameDel = "_del_" . now . "_" . l:sessionName
+                let s:sessionFullpathDel = g:vsession_path . "/" . l:sessionNameDel
+                echo s:sessionFullpathDel
+                call rename(s:sessionFullpath, s:sessionFullpathDel)
                 execute "bd!"
                 call s:SessionList()
 
-            elseif l:l:answer ==? 'n'
+            elseif l:answer ==? 'n'
                 echo ''
             else
                 echo 'Please enter "Y" or "n"'
